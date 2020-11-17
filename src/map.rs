@@ -6,17 +6,16 @@ use std::{
 };
 
 use futures_util::ready;
-use pin_project_lite::pin_project;
+use pin_project::pin_project;
 
 use crate::Svc;
 
-pin_project! {
-    pub struct MapSvc<S, F, Res> {
-        #[pin]
-        svc: S,
-        mapper: F,
-        _res: PhantomData<Res>,
-    }
+#[pin_project]
+pub struct MapSvc<S, F, Res> {
+    #[pin]
+    svc: S,
+    mapper: F,
+    _res: PhantomData<Res>,
 }
 
 impl<S, F, Res> MapSvc<S, F, Res> {
@@ -44,16 +43,15 @@ where
     }
 }
 
-pin_project! {
-    pub struct MapSvcFut<S, F, Req, Res>
-    where
-        S: Svc<Req>,
-        F: FnMut(S::Res) -> Res,
-    {
-        mapper: F,
-        #[pin]
-        fut: S::Fut,
-    }
+#[pin_project]
+pub struct MapSvcFut<S, F, Req, Res>
+where
+    S: Svc<Req>,
+    F: FnMut(S::Res) -> Res,
+{
+    mapper: F,
+    #[pin]
+    fut: S::Fut,
 }
 
 impl<S, F, Req, Res> MapSvcFut<S, F, Req, Res>
