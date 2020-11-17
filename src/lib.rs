@@ -9,6 +9,7 @@ use std::{
     task::{Context, Poll},
 };
 
+mod ext;
 mod fn_service;
 mod map;
 mod then;
@@ -16,6 +17,7 @@ mod then;
 pub use fn_service::FnSvc;
 pub use map::MapSvc;
 pub use then::ThenSvc;
+pub use ext::SvcExt;
 
 /// Service trait representing an asynchronous request/response operation.
 pub trait Svc<Req> {
