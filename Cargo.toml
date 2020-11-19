@@ -1,7 +1,7 @@
 [package]
 name = "async-svc"
 description = "WIP Modern Service Trait"
-version = "0.0.1"
+version = "0.0.2"
 authors = ["Rob Ede <robjtede@icloud.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
