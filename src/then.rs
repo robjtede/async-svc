@@ -106,7 +106,7 @@ mod tests {
     use crate::FnSvc;
 
     #[tokio::test]
-    async fn test_map_service() {
+    async fn test_then_service() {
         async fn doubler(n: u64) -> u64 {
             n * 2
         }

@@ -9,15 +9,18 @@ use std::{
     task::{Context, Poll},
 };
 
+mod boxed;
 mod ext;
+mod factory;
 mod fn_service;
 mod map;
 mod then;
 
+pub use boxed::{box_svc, BoxFut, BoxSvc};
+pub use ext::SvcExt;
 pub use fn_service::FnSvc;
 pub use map::MapSvc;
 pub use then::ThenSvc;
-pub use ext::SvcExt;
 
 /// Service trait representing an asynchronous request/response operation.
 pub trait Svc<Req> {
@@ -39,8 +42,18 @@ pub trait Svc<Req> {
     fn exec(self: Pin<&mut Self>, req: Req) -> Self::Fut;
 }
 
-pub trait SvcFactory<Req> {
-    type Svc: Svc<Req>;
+impl<S, Req> Svc<Req> for Box<S>
+where
+    S: Svc<Req>,
+{
+    type Res = S::Res;
+    type Fut = S::Fut;
 
-    fn new_service(&self) -> Self::Svc;
+    fn poll_ready(mut self: Pin<&mut Self>, cx: Context<'_>) -> Poll<()> {
+        self.as_mut().poll_ready(cx)
+    }
+
+    fn exec(mut self: Pin<&mut Self>, req: Req) -> Self::Fut {
+        self.as_mut().exec(req)
+    }
 }
