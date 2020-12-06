@@ -1,4 +1,4 @@
-use std::{future::Future, pin::Pin};
+use core::{future::Future, pin::Pin};
 
 use crate::Svc;
 
@@ -18,11 +18,19 @@ where
     Fut: Future<Output = Res>,
 {
     type Res = Res;
-    type Fut = Fut;
+    type Fut<'fut> = impl Future<Output = Res>;
 
-    fn exec(mut self: Pin<&mut Self>, req: Req) -> Self::Fut {
+    fn exec(mut self: Pin<&mut Self>, req: Req) -> Self::Fut<'_> {
         (self.f)(req)
     }
+}
+
+pub fn fn_service<F, Req, Fut, Res>(f: F) -> FnSvc<F>
+where
+    F: FnMut(Req) -> Fut + Unpin,
+    Fut: Future<Output = Res>,
+{
+    FnSvc { f }
 }
 
 #[cfg(test)]
@@ -33,14 +41,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_fn_service() {
-        async fn doubler(n: u64) -> u64 {
-            n * 2
-        }
-
-        let svc = FnSvc::new(doubler);
+        let svc = fn_service(|n: u64| async move { n * 2 });
         pin_mut!(svc);
 
-        let res = svc.exec(42).await;
+        let res = svc.as_mut().exec(42).await;
         assert_eq!(res, 84);
+
+        let res = svc.exec(43).await;
+        assert_eq!(res, 86);
     }
 }

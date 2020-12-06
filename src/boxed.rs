@@ -1,4 +1,5 @@
-use std::{
+use alloc::boxed::Box;
+use core::{
     future::Future,
     marker::PhantomData,
     pin::Pin,
@@ -14,21 +15,20 @@ pub type BoxSvc<Req, Res> = Pin<Box<dyn Svc<Req, Res = Res, Fut = BoxFut<Res>>>>
 
 impl<Req, Res> Svc<Req> for BoxSvc<Req, Res> {
     type Res = Res;
-    type Fut = BoxFut<Res>;
+    type Fut<'fut> = impl Future<Output = Self::Res>;
 
     fn poll_ready(mut self: Pin<&mut Self>, cx: Context<'_>) -> Poll<()> {
         self.as_mut().poll_ready(cx)
     }
 
-    fn exec(mut self: Pin<&mut Self>, req: Req) -> Self::Fut {
+    fn exec(mut self: Pin<&mut Self>, req: Req) -> Self::Fut<'_> {
         self.as_mut().exec(req)
     }
 }
 
 pub fn box_svc<S, Req>(svc: S) -> BoxSvc<Req, S::Res>
 where
-    S: Svc<Req> + 'static,
-    Req: 'static,
+    S: Svc<Req>,
 {
     Box::pin(SvcWrapper::new(svc))
 }
@@ -52,17 +52,16 @@ impl<S: Svc<Req>, Req> SvcWrapper<S, Req> {
 impl<S, Req> Svc<Req> for SvcWrapper<S, Req>
 where
     S: Svc<Req>,
-    S::Fut: 'static,
 {
     type Res = S::Res;
-    type Fut = BoxFut<S::Res>;
+    type Fut<'fut> = impl Future<Output = Self::Res>;
 
     fn poll_ready(self: Pin<&mut Self>, cx: Context<'_>) -> Poll<()> {
         let this = self.project();
         this.svc.poll_ready(cx)
     }
 
-    fn exec(self: Pin<&mut Self>, req: Req) -> Self::Fut {
+    fn exec(self: Pin<&mut Self>, req: Req) -> Self::Fut<'_> {
         let this = self.project();
         Box::pin(this.svc.exec(req))
     }
@@ -70,7 +69,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::{cell::RefCell, rc::Rc};
+    use alloc::rc::Rc;
+    use core::{cell::RefCell};
 
     use super::*;
     use crate::FnSvc;

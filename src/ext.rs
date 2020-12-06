@@ -1,6 +1,7 @@
-use std::marker::Sized;
+use core::marker::Sized;
 
-use crate::{box_svc, boxed::BoxSvc, MapSvc, Svc, ThenSvc};
+// use crate::{box_svc, boxed::BoxSvc, MapSvc, Svc, ThenSvc};
+use crate::{MapSvc, Svc, ThenSvc};
 
 pub trait SvcExt<Req>: Svc<Req> {
     fn map<F, Res>(self, f: F) -> MapSvc<Self, F, Res>
@@ -19,11 +20,11 @@ pub trait SvcExt<Req>: Svc<Req> {
         ThenSvc::new(self, svc2)
     }
 
-    fn boxed(self) -> BoxSvc<Req, Self::Res>
-    where
-        Self: Sized + 'static,
-        Req: 'static,
-    {
-        box_svc(self)
-    }
+    // fn boxed(self) -> BoxSvc<Req, Self::Res>
+    // where
+    //     Self: Sized + 'static,
+    //     Req: 'static,
+    // {
+    //     box_svc(self)
+    // }
 }

@@ -1,11 +1,11 @@
-use std::{
+use core::{
     future::Future,
     marker::PhantomData,
     pin::Pin,
-    task::{Context, Poll},
+    // task::{Context, Poll},
 };
 
-use futures_util::ready;
+// use futures_util::ready;
 use pin_project::pin_project;
 
 use crate::Svc;
@@ -34,48 +34,15 @@ where
     F: FnMut(S::Res) -> Res + Clone,
 {
     type Res = Res;
-    type Fut = MapSvcFut<S, F, Req, Res>;
+    type Fut<'fut> = impl Future<Output = Self::Res>;
 
-    fn exec(self: Pin<&mut Self>, req: Req) -> Self::Fut {
-        let mapper = self.mapper.clone();
-        let this = self.project();
-        MapSvcFut::new(this.svc.exec(req), mapper)
-    }
-}
-
-#[pin_project]
-pub struct MapSvcFut<S, F, Req, Res>
-where
-    S: Svc<Req>,
-    F: FnMut(S::Res) -> Res,
-{
-    mapper: F,
-    #[pin]
-    fut: S::Fut,
-}
-
-impl<S, F, Req, Res> MapSvcFut<S, F, Req, Res>
-where
-    S: Svc<Req>,
-    F: FnMut(S::Res) -> Res,
-{
-    pub fn new(fut: S::Fut, mapper: F) -> Self {
-        Self { fut, mapper }
-    }
-}
-
-impl<S, F, Req, Res> Future for MapSvcFut<S, F, Req, Res>
-where
-    S: Svc<Req>,
-    F: FnMut(S::Res) -> Res,
-{
-    type Output = Res;
-
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+    fn exec(self: Pin<&mut Self>, req: Req) -> Self::Fut<'_> {
         let this = self.project();
 
-        let res = ready!(this.fut.poll(cx));
-        Poll::Ready((this.mapper)(res))
+        async move {
+            let res = this.svc.exec(req).await;
+            (this.mapper)(res)
+        }
     }
 }
 
