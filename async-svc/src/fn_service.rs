@@ -53,7 +53,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn fn_service_static() {
+    async fn fn_service_owning() {
         let mut svc = fn_service(|n: u64| async move { n * 2 });
         let mut svc = pin!(svc);
 

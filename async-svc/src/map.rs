@@ -5,34 +5,34 @@ use pin_project_lite::pin_project;
 use crate::Svc;
 
 pin_project! {
-    pub struct MapSvc<S, F, Res> {
+    pub struct MapSvc<'f, S, F, Req, Res> {
         #[pin]
         svc: S,
         mapper: F,
-        _res: PhantomData<Res>,
+        _phantom: PhantomData<(&'f (), fn(Req) -> Res,)>,
     }
 }
 
-impl<S, F, Res> MapSvc<S, F, Res> {
+impl<S, F, Req, Res> MapSvc<'_, S, F, Req, Res> {
     pub fn new(svc: S, mapper: F) -> Self {
         Self {
             svc,
             mapper,
-            _res: PhantomData,
+            _phantom: PhantomData,
         }
     }
 }
 
-impl<S, Req, F, Res> Svc<Req> for MapSvc<S, F, Res>
+impl<'f, S, Req, F, Res> Svc<Req> for MapSvc<'f, S, F, Req, Res>
 where
     S: Svc<Req>,
-    F: FnMut(S::Res) -> Res + Clone,
+    F: FnMut(S::Res) -> Res + 'f,
 {
     type Res = Res;
-    type Fut<'fut>
+    type Fut<'fut> = impl Future<Output = Self::Res> + 'fut
     where
         Self: 'fut,
-    = impl Future<Output = Self::Res>;
+        'f: 'fut;
 
     fn exec(self: Pin<&mut Self>, req: Req) -> Self::Fut<'_> {
         let this = self.project();
@@ -46,23 +46,33 @@ where
 
 #[cfg(test)]
 mod tests {
-    use futures_util::pin_mut;
+    use std::pin::pin;
 
     use super::*;
-    use crate::FnSvc;
+    use crate::fn_service;
+
+    async fn doubler(n: u64) -> u64 {
+        n * 2
+    }
 
     #[tokio::test]
-    async fn test_map_service() {
-        async fn doubler(n: u64) -> u64 {
-            n * 2
-        }
+    async fn mapper_owning() {
+        let svc = fn_service(doubler);
+        let mut bnf = pin!(MapSvc::new(svc, |res| res + 2));
 
-        let svc = FnSvc::new(doubler);
-        let bnf = MapSvc::new(svc, |res| res + 2);
+        assert_eq!(bnf.as_mut().exec(42).await, 86);
+        assert_eq!(bnf.exec(2).await, 6);
+    }
 
-        pin_mut!(bnf);
+    #[tokio::test]
+    async fn mapper_borrowing() {
+        let prefix = "foo".to_owned();
+        let prefix = prefix.as_str();
 
-        let res = bnf.exec(42).await;
-        assert_eq!(res, 86);
+        let svc = fn_service(doubler);
+        let mut bnf = pin!(MapSvc::new(svc, |res| format!("{prefix} {res}")));
+
+        assert_eq!(bnf.as_mut().exec(42).await, "foo 84");
+        assert_eq!(bnf.exec(2).await, "foo 4");
     }
 }

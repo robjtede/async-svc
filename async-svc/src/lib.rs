@@ -12,19 +12,19 @@
 use core::{future::Future, pin::Pin};
 
 // mod boxed;
-// mod ext;
+mod ext;
 // mod factory;
 // mod fn_factory;
 mod fn_service;
-// mod map;
+mod map;
 // mod then;
 
 // pub use boxed::{box_svc, BoxFut, BoxSvc};
-// pub use ext::SvcExt;
+pub use self::ext::SvcExt;
 // pub use factory::SvcFactory;
 // pub use fn_factory::{fn_factory, FnFactory};
 pub use self::fn_service::{fn_service, FnSvc};
-// pub use self::map::MapSvc;
+pub use self::map::MapSvc;
 // pub use then::ThenSvc;
 
 /// Service trait representing an asynchronous request/response operation.
@@ -59,27 +59,73 @@ mod tests {
 
     use super::*;
 
-    struct ReturnsAsyncFn(String);
+    #[tokio::test]
+    async fn async_svc_borrowing_self() {
+        struct ReturnsAsyncFn(String);
 
-    impl Svc<()> for ReturnsAsyncFn {
-        type Res = usize;
+        impl Svc<()> for ReturnsAsyncFn {
+            type Res = usize;
+            type Fut<'fut> = impl Future<Output = Self::Res> + 'fut where Self: 'fut;
 
-        type Fut<'fut> = impl Future<Output = Self::Res> + 'fut where Self: 'fut;
-
-        fn exec(self: Pin<&mut Self>, _req: ()) -> Self::Fut<'_> {
-            async move {
-                let a = self.0.as_bytes();
-                a.len()
+            fn exec(self: Pin<&mut Self>, _req: ()) -> Self::Fut<'_> {
+                async move {
+                    std::future::ready(()).await;
+                    let a = self.0.as_bytes();
+                    a.len()
+                }
             }
         }
+
+        let mut svc = pin!(ReturnsAsyncFn("".to_owned()));
+        assert_eq!(svc.as_mut().exec(()).await, 0);
+        assert_eq!(svc.exec(()).await, 0);
+
+        let mut svc = pin!(ReturnsAsyncFn("foo".to_owned()));
+        assert_eq!(svc.as_mut().exec(()).await, 3);
+        assert_eq!(svc.exec(()).await, 3);
     }
 
     #[tokio::test]
-    async fn async_svc_that_borrows() {
-        let svc = ReturnsAsyncFn("".to_owned());
-        assert_eq!(pin!(svc).exec(()).await, 0);
+    async fn async_svc_borrowing_req() {
+        struct ReturnsAsyncFn;
 
-        let svc = ReturnsAsyncFn("foo".to_owned());
-        assert_eq!(pin!(svc).exec(()).await, 3);
+        impl Svc<String> for ReturnsAsyncFn {
+            type Res = usize;
+            type Fut<'fut> = impl Future<Output = Self::Res> + 'fut where Self: 'fut;
+
+            fn exec(self: Pin<&mut Self>, req: String) -> Self::Fut<'_> {
+                async move {
+                    std::future::ready(()).await;
+                    let a = req.as_bytes();
+                    a.len()
+                }
+            }
+        }
+
+        let mut svc = pin!(ReturnsAsyncFn);
+        assert_eq!(svc.as_mut().exec("".to_owned()).await, 0);
+        assert_eq!(svc.exec("foo".to_owned()).await, 3);
+    }
+
+    #[tokio::test]
+    async fn async_svc_borrowing_both() {
+        struct PrependStringDelay<'a>(&'a str);
+
+        impl Svc<String> for PrependStringDelay<'_> {
+            type Res = String;
+            type Fut<'fut> = impl Future<Output = Self::Res> + 'fut where Self: 'fut;
+
+            fn exec(self: Pin<&mut Self>, req: String) -> Self::Fut<'_> {
+                async move {
+                    std::future::ready(()).await;
+                    format!("{} {req}", &self.0)
+                }
+            }
+        }
+
+        let prefix = "foo".to_owned();
+        let mut svc = pin!(PrependStringDelay(prefix.as_str()));
+        assert_eq!(svc.as_mut().exec("bar".to_owned()).await, "foo bar");
+        assert_eq!(svc.exec("baz".to_owned()).await, "foo baz");
     }
 }
