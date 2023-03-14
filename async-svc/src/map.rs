@@ -56,7 +56,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn mapper_owning() {
+    async fn map_owning() {
         let svc = fn_service(doubler);
         let mut bnf = pin!(MapSvc::new(svc, |res| res + 2));
 
@@ -65,7 +65,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn mapper_borrowing() {
+    async fn map_borrowing() {
         let prefix = "foo".to_owned();
         let prefix = prefix.as_str();
 

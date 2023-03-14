@@ -17,15 +17,16 @@ mod ext;
 // mod fn_factory;
 mod fn_service;
 mod map;
-// mod then;
+mod then;
 
 // pub use boxed::{box_svc, BoxFut, BoxSvc};
-pub use self::ext::SvcExt;
 // pub use factory::SvcFactory;
-// pub use fn_factory::{fn_factory, FnFactory};
-pub use self::fn_service::{fn_service, FnSvc};
-pub use self::map::MapSvc;
-// pub use then::ThenSvc;
+pub use self::{
+    ext::SvcExt,
+    fn_service::{fn_service, FnSvc},
+    map::MapSvc,
+    then::ThenSvc,
+};
 
 /// Service trait representing an asynchronous request/response operation.
 pub trait Svc<Req> {

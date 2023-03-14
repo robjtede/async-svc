@@ -6,18 +6,18 @@ use crate::Svc;
 
 pin_project! {
     /// Service1(Response) -> Intermediate => Service2(Intermediate) -> Response
-    pub struct ThenSvc<S1, S2, Int, Res> {
+    pub struct ThenSvc<S1, S2, Req, Int, Res> {
         #[pin]
         svc1: S1,
 
         #[pin]
         svc2: S2,
 
-        _phantom: PhantomData<(Int, Res)>,
+        _phantom: PhantomData<(fn(Req) -> Res, Int,)>,
     }
 }
 
-impl<S1, S2, Int, Res> ThenSvc<S1, S2, Int, Res> {
+impl<S1, S2, Req, Int, Res> ThenSvc<S1, S2, Req, Int, Res> {
     pub fn new(svc1: S1, svc2: S2) -> Self {
         Self {
             svc1,
@@ -27,16 +27,13 @@ impl<S1, S2, Int, Res> ThenSvc<S1, S2, Int, Res> {
     }
 }
 
-impl<S1, S2, Req, Int, Res> Svc<Req> for ThenSvc<S1, S2, Int, Res>
+impl<S1, S2, Req, Int, Res> Svc<Req> for ThenSvc<S1, S2, Req, Int, Res>
 where
     S1: Svc<Req, Res = Int>,
     S2: Svc<Int, Res = Res>,
 {
     type Res = Res;
-    type Fut<'fut>
-    where
-        Self: 'fut,
-    = impl Future<Output = Self::Res> + 'fut;
+    type Fut<'fut> = impl Future<Output = Self::Res> + 'fut where Self: 'fut;
 
     fn exec(self: Pin<&mut Self>, req: Req) -> Self::Fut<'_> {
         let this = self.project();
@@ -50,24 +47,35 @@ where
 
 #[cfg(test)]
 mod tests {
-    use futures_util::pin_mut;
+    use std::pin::pin;
 
     use super::*;
-    use crate::FnSvc;
+    use crate::{fn_service, FnSvc};
+
+    async fn doubler(n: u64) -> u64 {
+        n * 2
+    }
 
     #[tokio::test]
-    async fn test_then_service() {
-        async fn doubler(n: u64) -> u64 {
-            n * 2
-        }
-
+    async fn then_owning() {
         let svc1 = FnSvc::new(doubler);
         let svc2 = FnSvc::new(doubler);
-        let bnf = ThenSvc::new(svc1, svc2);
+        let mut bnf = pin!(ThenSvc::new(svc1, svc2));
 
-        pin_mut!(bnf);
+        assert_eq!(bnf.as_mut().exec(2).await, 8);
+        assert_eq!(bnf.exec(3).await, 12);
+    }
 
-        let res = bnf.exec(42).await;
-        assert_eq!(res, 168);
+    #[tokio::test]
+    async fn then_borrowing() {
+        let prefix = "foo".to_owned();
+        let prefix = prefix.as_str();
+
+        let svc1 = fn_service(doubler);
+        let svc2 = fn_service(|n| async move { format!("{prefix} {n}") });
+        let mut bnf = pin!(ThenSvc::new(svc1, svc2));
+
+        assert_eq!(bnf.as_mut().exec(2).await, "foo 4");
+        assert_eq!(bnf.exec(3).await, "foo 6");
     }
 }
