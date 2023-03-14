@@ -1,0 +1,13 @@
+[package]
+name = "async-socket"
+version = "0.1.0"
+private = true
+authors = ["Rob Ede <robjtede@icloud.com>"]
+edition = "2018"
+license = "MIT OR Apache-2.0"
+rust-version = "1.65"
+
+[dependencies]
+async-svc = "0.0.2"
+tokio = { version = "1.13.1", features = ["full"] }
+futures-util = { version = "0.3.17", default-features = false, features = ["std"] }

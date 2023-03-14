@@ -1,0 +1,15 @@
+[package]
+name = "async-svc"
+version = "0.0.2"
+description = "WIP Modern Service Trait"
+authors = ["Rob Ede <robjtede@icloud.com>"]
+license = "MIT OR Apache-2.0"
+edition = "2018"
+rust-version = "1.65"
+
+[dependencies]
+futures-util = { version = "0.3.17", default-features = false, features = ["std"] }
+pin-project-lite = "0.2"
+
+[dev-dependencies]
+tokio = { version = "1.13.1", features = ["full"] }
