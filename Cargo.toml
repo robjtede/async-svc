@@ -1,9 +1,8 @@
 [workspace]
 members = [
-    "async-svc",
-    "async-socket",
+    "crates/*",
 ]
 
 [patch.crates-io]
-async-svc = { path = "./async-svc" }
-async-socket = { path = "./async-socket" }
+async-svc = { path = "./crates/svc" }
+async-socket = { path = "./crates/socket" }

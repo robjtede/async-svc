@@ -74,6 +74,6 @@ jobs:
 
       - name: generate API diff
         run: |
-          for f in $(find -mindepth 2 -maxdepth 2 -name Cargo.toml); do
+          for f in $(find crates -name Cargo.toml); do
             cargo public-api --manifest-path "$f" diff ${{ github.event.pull_request.base.sha }}..${{ github.sha }}
           done
