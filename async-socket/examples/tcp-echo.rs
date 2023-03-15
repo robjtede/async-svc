@@ -2,7 +2,12 @@
 #![allow(incomplete_features)]
 #![feature(type_alias_impl_trait, never_type)]
 
-use std::{future::Future, io, net::SocketAddr, pin::Pin};
+use std::{
+    future::{ready, Future, Ready},
+    io,
+    net::SocketAddr,
+    pin::Pin,
+};
 
 use async_socket::Server;
 use async_svc::Svc;
@@ -34,14 +39,29 @@ async fn start() -> io::Result<()> {
 
     let srv = Server::bind(("127.0.0.1", 4444)).await?;
 
-    tracing::info!("server started and bound to {}", srv.addr());
+    tracing::info!("server started at {}", srv.addr());
 
-    try_join!(srv.run_using(Echoer::default()))?;
+    try_join!(srv.run_using(EchoerFactory))?;
 
     Ok(())
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug)]
+struct EchoerFactory;
+
+impl Svc<()> for EchoerFactory {
+    type Res = Echoer;
+
+    type Fut<'fut> = Ready<Echoer>
+    where
+        Self: 'fut;
+
+    fn exec(self: Pin<&mut Self>, _req: ()) -> Self::Fut<'_> {
+        ready(Echoer::default())
+    }
+}
+
+#[derive(Debug, Default)]
 struct Echoer {
     buffer: Vec<u8>,
 }
@@ -56,11 +76,7 @@ impl Svc<(TcpStream, SocketAddr)> for Echoer {
         mut self: Pin<&mut Self>,
         (mut stream, _peer_addr): (TcpStream, SocketAddr),
     ) -> Self::Fut<'_> {
-        tracing::debug!("exec-ing");
-
         async move {
-            tracing::debug!("async-ing");
-
             loop {
                 let mut buf = [0u8; 256];
 
@@ -81,7 +97,7 @@ impl Svc<(TcpStream, SocketAddr)> for Echoer {
                 self.buffer.append(&mut buf[..read].to_vec());
             }
 
-            tracing::debug!("whole input: {:?}", self.buffer);
+            tracing::debug!("whole input: {:X?}", self.buffer);
         }
     }
 }

@@ -26,22 +26,19 @@ impl Server {
 
     pub async fn run_using<SF>(self, factory: SF) -> io::Result<()>
     where
-        SF: Svc<(TcpStream, SocketAddr)> + Clone + 'static,
-        SF::Fut<'static>: Send + 'static,
+        SF: Svc<()>,
+        SF::Res: Svc<(TcpStream, SocketAddr)> + 'static,
+        <SF::Res as Svc<(TcpStream, SocketAddr)>>::Fut<'static>: 'static,
     {
-        tracing::info!("running");
+        let mut factory = pin!(factory);
 
         loop {
-            tracing::info!("cloning");
-            let factory = factory.clone();
-            tracing::info!("accepting");
+            let svc = factory.as_mut().exec(()).await;
             let accept = self.lst.accept().await?;
 
-            tracing::info!("spawning factory");
             tokio::task::spawn_local(async move {
-                let factory = pin!(factory);
-                tracing::info!("executing factory");
-                factory.exec(accept).await;
+                let svc = pin!(svc);
+                svc.exec(accept).await;
             });
         }
     }
