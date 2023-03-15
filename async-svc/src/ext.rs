@@ -18,14 +18,6 @@ pub trait SvcExt<Req>: Svc<Req> {
     {
         ThenSvc::new(self, svc2)
     }
-
-    // fn boxed(self) -> BoxSvc<Req, Self::Res>
-    // where
-    //     Self: Sized + 'static,
-    //     Req: 'static,
-    // {
-    //     box_svc(self)
-    // }
 }
 
 impl<S, Req> SvcExt<Req> for S where S: Svc<Req> {}
@@ -58,6 +50,6 @@ mod tests {
     async fn then() {
         let mut svc = pin!(fn_service(doubler).then(fn_service(doubler)));
         assert_eq!(svc.as_mut().exec(1).await, 4);
-        assert_eq!(svc.exec(3).await, 4);
+        assert_eq!(svc.exec(3).await, 12);
     }
 }
