@@ -6,21 +6,13 @@
 #![allow(incomplete_features)]
 #![feature(type_alias_impl_trait, associated_type_defaults)]
 
-// extern crate alloc;
-
-// use alloc::boxed::Box;
 use core::{future::Future, pin::Pin};
 
-// mod boxed;
 mod ext;
-// mod factory;
-// mod fn_factory;
 mod fn_service;
 mod map;
 mod then;
 
-// pub use boxed::{box_svc, BoxFut, BoxSvc};
-// pub use factory::SvcFactory;
 pub use self::{
     ext::SvcExt,
     fn_service::{fn_service, FnSvc},
