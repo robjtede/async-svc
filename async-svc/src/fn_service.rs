@@ -34,10 +34,9 @@ where
     Fut: Future<Output = Res> + 'f,
 {
     type Res = Res;
-    type Fut<'fut> = impl Future<Output = Res> + 'fut
+    type Fut<'fut> = impl Future<Output = Res>
     where
-        Self: 'fut,
-        'f: 'fut;
+        Self: 'fut;
 
     fn exec(mut self: Pin<&mut Self>, req: Req) -> Self::Fut<'_> {
         (self.f)(req)

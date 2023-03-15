@@ -31,8 +31,7 @@ where
     type Res = Res;
     type Fut<'fut> = impl Future<Output = Self::Res> + 'fut
     where
-        Self: 'fut,
-        'f: 'fut;
+        Self: 'fut;
 
     fn exec(self: Pin<&mut Self>, req: Req) -> Self::Fut<'_> {
         let this = self.project();

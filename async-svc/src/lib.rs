@@ -3,7 +3,6 @@
 // #![no_std]
 #![forbid(unsafe_code)]
 #![deny(rust_2018_idioms, nonstandard_style)]
-#![allow(incomplete_features)]
 #![feature(type_alias_impl_trait, associated_type_defaults)]
 
 use core::{future::Future, pin::Pin};
@@ -39,7 +38,9 @@ where
     S: Svc<Req>,
 {
     type Res = S::Res;
-    type Fut<'fut> = S::Fut<'fut> where Self: 'fut;
+    type Fut<'fut> = S::Fut<'fut>
+    where
+        Self: 'fut;
 
     fn exec(self: Pin<&mut Self>, req: Req) -> Self::Fut<'_> {
         self.get_mut().as_mut().exec(req)

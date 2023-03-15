@@ -1,19 +1,16 @@
 //! WIP async TCP socket using async-svc
 
+#![forbid(unsafe_code)]
 #![deny(rust_2018_idioms, nonstandard_style)]
-#![allow(incomplete_features)]
 #![feature(type_alias_impl_trait, never_type)]
 
-use std::{fmt, io};
+use std::{io, net::SocketAddr, pin::pin};
 
-use async_svc::{Svc, SvcFactory};
-use tokio::{
-    net::{TcpListener, TcpStream, ToSocketAddrs},
-    pin, task,
-};
+use async_svc::Svc;
+use tokio::net::{TcpListener, TcpStream, ToSocketAddrs};
 
 pub struct Server {
-    lst: TcpListener,
+    pub lst: TcpListener,
 }
 
 impl Server {
@@ -23,25 +20,28 @@ impl Server {
         })
     }
 
+    pub fn addr(&self) -> SocketAddr {
+        self.lst.local_addr().unwrap()
+    }
+
     pub async fn run_using<SF>(self, factory: SF) -> io::Result<()>
     where
-        SF: SvcFactory<TcpStream, Cfg = ()>,
-        SF::InitErr: fmt::Debug,
-        SF::InitSvc: Send + 'static,
-        <SF::InitSvc as Svc<TcpStream>>::Res: Send + 'static,
-        <SF::InitSvc as Svc<TcpStream>>::Fut<'static>: Send + 'static,
+        SF: Svc<(TcpStream, SocketAddr)> + Clone + 'static,
+        SF::Fut<'static>: Send + 'static,
     {
-        pin!(factory);
+        tracing::info!("running");
 
         loop {
-            let (stream, addr) = self.lst.accept().await?;
+            tracing::info!("cloning");
+            let factory = factory.clone();
+            tracing::info!("accepting");
+            let accept = self.lst.accept().await?;
 
-            let svc = factory.init_svc(()).await.unwrap();
-
-            let _ = task::spawn(async move {
-                println!("connection from {}", addr);
-                pin!(svc);
-                svc.exec(stream).await
+            tracing::info!("spawning factory");
+            tokio::task::spawn_local(async move {
+                let factory = pin!(factory);
+                tracing::info!("executing factory");
+                factory.exec(accept).await;
             });
         }
     }

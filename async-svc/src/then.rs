@@ -33,7 +33,9 @@ where
     S2: Svc<Int, Res = Res>,
 {
     type Res = Res;
-    type Fut<'fut> = impl Future<Output = Self::Res> + 'fut where Self: 'fut;
+    type Fut<'fut> = impl Future<Output = Self::Res> + 'fut
+    where
+        Self: 'fut;
 
     fn exec(self: Pin<&mut Self>, req: Req) -> Self::Fut<'_> {
         let this = self.project();
