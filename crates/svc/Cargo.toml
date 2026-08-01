@@ -13,3 +13,6 @@ pin-project-lite = "0.2"
 
 [dev-dependencies]
 tokio = { version = "1.13.1", features = ["full"] }
+
+[lints]
+workspace = true

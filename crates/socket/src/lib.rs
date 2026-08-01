@@ -1,7 +1,5 @@
 //! WIP async TCP socket using async-svc
 
-#![forbid(unsafe_code)]
-#![deny(rust_2018_idioms, nonstandard_style)]
 
 use std::{io, net::SocketAddr, pin::pin};
 

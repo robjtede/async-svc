@@ -1,3 +1,8 @@
 [workspace]
 resolver = "3"
 members = ["crates/*"]
+
+[workspace.lints.rust]
+nonstandard_style = "deny"
+rust_2018_idioms = "deny"
+unsafe_code = "forbid"
