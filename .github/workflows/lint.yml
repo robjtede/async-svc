@@ -70,7 +70,7 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
         with: { toolchain: nightly }
 
-      - uses: taiki-e/cache-cargo-install-action@c1c0be4dfa152beb021a9b8af00d6e4aac4a4e16 # v1.4.0
+      - uses: taiki-e/cache-cargo-install-action@417450f3c33ee20393705369577571770643d4c7 # v3.0.7
         with:
           tool: cargo-public-api
 
