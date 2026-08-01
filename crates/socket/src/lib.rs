@@ -1,6 +1,5 @@
 //! WIP async TCP socket using async-svc
 
-
 use std::{io, net::SocketAddr, pin::pin};
 
 use async_svc::Svc;

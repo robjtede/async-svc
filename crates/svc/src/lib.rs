@@ -1,6 +1,5 @@
 //! WIP Modern Service Trait
 
-// #![no_std]
 #![feature(impl_trait_in_assoc_type)]
 
 use core::{future::Future, pin::Pin};
@@ -36,7 +35,8 @@ where
     S: Svc<Req>,
 {
     type Res = S::Res;
-    type Fut<'fut> = S::Fut<'fut>
+    type Fut<'fut>
+        = S::Fut<'fut>
     where
         Self: 'fut;
 
@@ -57,7 +57,10 @@ mod tests {
 
         impl Svc<()> for ReturnsAsyncFn {
             type Res = usize;
-            type Fut<'fut> = impl Future<Output = Self::Res> + 'fut where Self: 'fut;
+            type Fut<'fut>
+                = impl Future<Output = Self::Res> + 'fut
+            where
+                Self: 'fut;
 
             fn exec(self: Pin<&mut Self>, _req: ()) -> Self::Fut<'_> {
                 async move {
@@ -83,7 +86,10 @@ mod tests {
 
         impl Svc<String> for ReturnsAsyncFn {
             type Res = usize;
-            type Fut<'fut> = impl Future<Output = Self::Res> + 'fut where Self: 'fut;
+            type Fut<'fut>
+                = impl Future<Output = Self::Res> + 'fut
+            where
+                Self: 'fut;
 
             fn exec(self: Pin<&mut Self>, req: String) -> Self::Fut<'_> {
                 async move {
@@ -105,12 +111,15 @@ mod tests {
 
         impl Svc<String> for PrependStringDelay<'_> {
             type Res = String;
-            type Fut<'fut> = impl Future<Output = Self::Res> + 'fut where Self: 'fut;
+            type Fut<'fut>
+                = impl Future<Output = Self::Res> + 'fut
+            where
+                Self: 'fut;
 
             fn exec(self: Pin<&mut Self>, req: String) -> Self::Fut<'_> {
                 async move {
                     std::future::ready(()).await;
-                    format!("{} {req}", &self.0)
+                    format!("{} {req}", self.0)
                 }
             }
         }

@@ -27,9 +27,8 @@ mod tests {
     use core::fmt;
     use std::pin::pin;
 
-    use crate::fn_service;
-
     use super::*;
+    use crate::fn_service;
 
     async fn doubler(n: u64) -> u64 {
         n * 2

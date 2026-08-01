@@ -1,7 +1,7 @@
 #![feature(impl_trait_in_assoc_type)]
 
 use std::{
-    future::{ready, Future, Ready},
+    future::{Future, Ready, ready},
     io,
     net::SocketAddr,
     pin::Pin,
@@ -50,7 +50,8 @@ struct EchoerFactory;
 impl Svc<()> for EchoerFactory {
     type Res = Echoer;
 
-    type Fut<'fut> = Ready<Echoer>
+    type Fut<'fut>
+        = Ready<Echoer>
     where
         Self: 'fut;
 
@@ -66,7 +67,8 @@ struct Echoer {
 
 impl Svc<(TcpStream, SocketAddr)> for Echoer {
     type Res = ();
-    type Fut<'fut> = impl Future<Output = Self::Res> + Send + 'fut
+    type Fut<'fut>
+        = impl Future<Output = Self::Res> + Send + 'fut
     where
         Self: 'fut;
 
@@ -90,7 +92,7 @@ impl Svc<(TcpStream, SocketAddr)> for Echoer {
                 };
 
                 tracing::debug!("read in: {read} bytes");
-                let _ = stream.write_all(&buf[..read]).await.unwrap();
+                stream.write_all(&buf[..read]).await.unwrap();
 
                 self.buffer.append(&mut buf[..read].to_vec());
             }

@@ -29,7 +29,8 @@ where
     F: FnMut(S::Res) -> Res + 'f,
 {
     type Res = Res;
-    type Fut<'fut> = impl Future<Output = Self::Res> + 'fut
+    type Fut<'fut>
+        = impl Future<Output = Self::Res> + 'fut
     where
         Self: 'fut;
 

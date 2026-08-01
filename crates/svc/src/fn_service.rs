@@ -34,7 +34,8 @@ where
     Fut: Future<Output = Res> + 'f,
 {
     type Res = Res;
-    type Fut<'fut> = impl Future<Output = Res>
+    type Fut<'fut>
+        = impl Future<Output = Res>
     where
         Self: 'fut;
 
@@ -69,7 +70,7 @@ mod tests {
 
         let mut svc = pin!(fn_service(|n: u64| {
             let prefix = prefix.as_str();
-            return async move { format!("{prefix} {}", n * 2) };
+            async move { format!("{prefix} {}", n * 2) }
         }));
 
         let res = svc.as_mut().exec(42).await;
