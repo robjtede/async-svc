@@ -27,4 +27,4 @@ test: test-no-doc test-doc
 
 # Check documentation links and warnings.
 docs:
-    RUSTDOCFLAGS='-D warnings' cargo {{ toolchain }} doc --workspace --no-deps --all-features
+    RUSTDOCFLAGS='-Znext-solver=globally -D warnings' cargo {{ toolchain }} doc --workspace --no-deps --all-features
