@@ -9,13 +9,19 @@ fmt:
 clippy:
     cargo +nightly clippy --workspace --all-targets --all-features -- -D warnings
 
-# Test the workspace.
-test:
+# Test the workspace without documentation tests.
+[private]
+test-no-doc:
     cargo +nightly nextest run --workspace --all-features --no-tests=pass
 
 # Run documentation tests.
-doc-test:
+[private]
+test-doc:
     cargo +nightly test --workspace --doc --all-features
+
+# Test the workspace.
+[parallel]
+test: test-no-doc test-doc
 
 # Check documentation links and warnings.
 docs:

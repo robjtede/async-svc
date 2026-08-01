@@ -31,21 +31,3 @@ jobs:
 
       - name: Test
         run: just test
-
-  doc-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
-        with: { toolchain: nightly }
-
-      - name: Install just
-        uses: taiki-e/install-action@18b1216eba7f8039b0f8d131d5473787f0edce68 # v2.85.3
-        with:
-          tool: just
-
-      - name: Documentation Tests
-        run: just doc-test
