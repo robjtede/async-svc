@@ -1,23 +1,25 @@
 _list:
     @just --list
 
+toolchain := "+nightly"
+
 # Check Rust formatting.
 fmt:
-    cargo +nightly fmt --all -- --check
+    cargo {{ toolchain }} fmt --all -- --check
 
 # Lint all workspace targets.
 clippy:
-    cargo +nightly clippy --workspace --all-targets --all-features -- -D warnings
+    cargo {{ toolchain }} clippy --workspace --all-targets --all-features -- -D warnings
 
 # Test the workspace without documentation tests.
 [private]
 test-no-doc:
-    cargo +nightly nextest run --workspace --all-features --no-tests=pass
+    cargo {{ toolchain }} nextest run --workspace --all-features --no-tests=pass
 
 # Run documentation tests.
 [private]
 test-doc:
-    cargo +nightly test --workspace --doc --all-features
+    cargo {{ toolchain }} test --workspace --doc --all-features
 
 # Test the workspace.
 [parallel]
@@ -25,4 +27,4 @@ test: test-no-doc test-doc
 
 # Check documentation links and warnings.
 docs:
-    RUSTDOCFLAGS='-D warnings' cargo +nightly doc --workspace --no-deps --all-features
+    RUSTDOCFLAGS='-D warnings' cargo {{ toolchain }} doc --workspace --no-deps --all-features
