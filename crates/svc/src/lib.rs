@@ -3,7 +3,7 @@
 // #![no_std]
 #![forbid(unsafe_code)]
 #![deny(rust_2018_idioms, nonstandard_style)]
-#![feature(type_alias_impl_trait, associated_type_defaults)]
+#![feature(impl_trait_in_assoc_type)]
 
 use core::{future::Future, pin::Pin};
 

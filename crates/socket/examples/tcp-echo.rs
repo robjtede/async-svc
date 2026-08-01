@@ -1,6 +1,5 @@
 #![deny(rust_2018_idioms, nonstandard_style)]
-#![allow(incomplete_features)]
-#![feature(type_alias_impl_trait, never_type)]
+#![feature(impl_trait_in_assoc_type)]
 
 use std::{
     future::{ready, Future, Ready},

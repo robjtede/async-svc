@@ -2,7 +2,6 @@
 
 #![forbid(unsafe_code)]
 #![deny(rust_2018_idioms, nonstandard_style)]
-#![feature(type_alias_impl_trait, never_type)]
 
 use std::{io, net::SocketAddr, pin::pin};
 

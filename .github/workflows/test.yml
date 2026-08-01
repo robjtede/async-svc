@@ -23,9 +23,7 @@ jobs:
         with: { toolchain: nightly }
 
       - name: Install cargo-hack
-        uses: taiki-e/cache-cargo-install-action@c1c0be4dfa152beb021a9b8af00d6e4aac4a4e16 # v1.4.0
-        with:
-          tool: cargo-hack
+        uses: taiki-e/install-action@d5cf8403b6d108f6c4154bd8bc175f75792ca60c # cargo-hack
 
       - name: tests
         run: cargo test --workspace --all-features
