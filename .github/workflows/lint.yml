@@ -71,29 +71,3 @@ jobs:
 
       - name: Check for broken intra-doc links
         run: just docs
-
-  public-api-diff:
-    runs-on: ubuntu-latest
-    if: false # disable for now
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.base_ref }}
-          persist-credentials: false
-
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
-        with: { toolchain: nightly }
-
-      - uses: taiki-e/cache-cargo-install-action@417450f3c33ee20393705369577571770643d4c7 # v3.0.7
-        with:
-          tool: cargo-public-api
-
-      - name: generate API diff
-        run: |
-          for f in $(find crates -name Cargo.toml); do
-            cargo public-api --manifest-path "$f" diff ${{ github.event.pull_request.base.sha }}..${{ github.sha }}
-          done
