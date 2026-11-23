@@ -29,12 +29,18 @@ impl Server {
         let mut factory = pin!(factory);
 
         loop {
-            let svc = factory.as_mut().exec(()).await;
+            let Some(permit) = factory.as_ref().get_ref().acquire().await else {
+                return Ok(());
+            };
+            let svc = factory.as_mut().exec(permit, ()).await;
             let accept = self.lst.accept().await?;
 
             tokio::task::spawn_local(async move {
                 let svc = pin!(svc);
-                svc.exec(accept).await;
+                let Some(permit) = svc.as_ref().get_ref().acquire().await else {
+                    return;
+                };
+                svc.exec(permit, accept).await;
             });
         }
     }

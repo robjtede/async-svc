@@ -48,14 +48,24 @@ async fn start() -> io::Result<()> {
 struct EchoerFactory;
 
 impl Svc<()> for EchoerFactory {
-    type Res = Echoer;
+    type Permit = ();
 
+    type AcquireFut<'fut>
+        = Ready<Option<Self::Permit>>
+    where
+        Self: 'fut;
+
+    type Res = Echoer;
     type Fut<'fut>
         = Ready<Echoer>
     where
         Self: 'fut;
 
-    fn exec(self: Pin<&mut Self>, _req: ()) -> Self::Fut<'_> {
+    fn acquire(&self) -> Self::AcquireFut<'_> {
+        ready(Some(()))
+    }
+
+    fn exec(self: Pin<&mut Self>, (): Self::Permit, _req: ()) -> Self::Fut<'_> {
         ready(Echoer::default())
     }
 }
@@ -66,14 +76,24 @@ struct Echoer {
 }
 
 impl Svc<(TcpStream, SocketAddr)> for Echoer {
+    type Permit = ();
+    type AcquireFut<'fut>
+        = Ready<Option<Self::Permit>>
+    where
+        Self: 'fut;
     type Res = ();
     type Fut<'fut>
         = impl Future<Output = Self::Res> + Send + 'fut
     where
         Self: 'fut;
 
+    fn acquire(&self) -> Self::AcquireFut<'_> {
+        ready(Some(()))
+    }
+
     fn exec(
         mut self: Pin<&mut Self>,
+        (): Self::Permit,
         (mut stream, _peer_addr): (TcpStream, SocketAddr),
     ) -> Self::Fut<'_> {
         async move {

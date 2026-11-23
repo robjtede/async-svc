@@ -1,4 +1,7 @@
-use core::{future::Future, pin::Pin};
+use core::{
+    future::{ready, Future, Ready},
+    pin::Pin,
+};
 use std::marker::PhantomData;
 
 use crate::Svc;
@@ -33,13 +36,22 @@ where
     F: FnMut(Req) -> Fut + Unpin + 'f,
     Fut: Future<Output = Res> + 'f,
 {
+    type Permit = ();
+    type AcquireFut<'fut>
+        = Ready<Option<Self::Permit>>
+    where
+        Self: 'fut;
     type Res = Res;
     type Fut<'fut>
-        = impl Future<Output = Res>
+        = impl Future<Output = Res> + 'fut
     where
         Self: 'fut;
 
-    fn exec(mut self: Pin<&mut Self>, req: Req) -> Self::Fut<'_> {
+    fn acquire(&self) -> Self::AcquireFut<'_> {
+        ready(Some(()))
+    }
+
+    fn exec(mut self: Pin<&mut Self>, (): Self::Permit, req: Req) -> Self::Fut<'_> {
         (self.f)(req)
     }
 }
@@ -51,16 +63,17 @@ mod tests {
     use std::pin::pin;
 
     use super::*;
+    use crate::oneshot;
 
     #[tokio::test]
     async fn fn_service_owning() {
         let mut svc = fn_service(|n: u64| async move { n * 2 });
         let mut svc = pin!(svc);
 
-        let res = svc.as_mut().exec(42).await;
+        let res = oneshot(svc.as_mut(), 42).await;
         assert_eq!(res, 84);
 
-        let res = svc.as_mut().exec(43).await;
+        let res = oneshot(svc.as_mut(), 43).await;
         assert_eq!(res, 86);
     }
 
@@ -73,10 +86,10 @@ mod tests {
             async move { format!("{prefix} {}", n * 2) }
         }));
 
-        let res = svc.as_mut().exec(42).await;
+        let res = oneshot(svc.as_mut(), 42).await;
         assert_eq!(res, "prefix 84");
 
-        let res = svc.as_mut().exec(43).await;
+        let res = oneshot(svc.as_mut(), 43).await;
         assert_eq!(res, "prefix 86");
     }
 }

@@ -28,17 +28,26 @@ where
     S: Svc<Req>,
     F: FnMut(S::Res) -> Res + 'f,
 {
+    type Permit = S::Permit;
+    type AcquireFut<'fut>
+        = S::AcquireFut<'fut>
+    where
+        Self: 'fut;
     type Res = Res;
     type Fut<'fut>
         = impl Future<Output = Self::Res> + 'fut
     where
         Self: 'fut;
 
-    fn exec(self: Pin<&mut Self>, req: Req) -> Self::Fut<'_> {
+    fn acquire(&self) -> Self::AcquireFut<'_> {
+        self.svc.acquire()
+    }
+
+    fn exec(self: Pin<&mut Self>, permit: Self::Permit, req: Req) -> Self::Fut<'_> {
         let this = self.project();
 
         async move {
-            let res = this.svc.exec(req).await;
+            let res = this.svc.exec(permit, req).await;
             (this.mapper)(res)
         }
     }
@@ -49,7 +58,7 @@ mod tests {
     use std::pin::pin;
 
     use super::*;
-    use crate::fn_service;
+    use crate::{fn_service, oneshot};
 
     async fn doubler(n: u64) -> u64 {
         n * 2
@@ -60,8 +69,8 @@ mod tests {
         let svc = fn_service(doubler);
         let mut bnf = pin!(MapSvc::new(svc, |res| res + 2));
 
-        assert_eq!(bnf.as_mut().exec(42).await, 86);
-        assert_eq!(bnf.exec(2).await, 6);
+        assert_eq!(oneshot(bnf.as_mut(), 42).await, 86);
+        assert_eq!(oneshot(bnf, 2).await, 6);
     }
 
     #[tokio::test]
@@ -72,7 +81,7 @@ mod tests {
         let svc = fn_service(doubler);
         let mut bnf = pin!(MapSvc::new(svc, |res| format!("{prefix} {res}")));
 
-        assert_eq!(bnf.as_mut().exec(42).await, "foo 84");
-        assert_eq!(bnf.exec(2).await, "foo 4");
+        assert_eq!(oneshot(bnf.as_mut(), 42).await, "foo 84");
+        assert_eq!(oneshot(bnf, 2).await, "foo 4");
     }
 }

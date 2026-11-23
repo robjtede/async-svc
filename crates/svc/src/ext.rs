@@ -28,7 +28,7 @@ mod tests {
     use std::pin::pin;
 
     use super::*;
-    use crate::fn_service;
+    use crate::{fn_service, oneshot};
 
     async fn doubler(n: u64) -> u64 {
         n * 2
@@ -41,14 +41,14 @@ mod tests {
     #[tokio::test]
     async fn map() {
         let mut svc = pin!(fn_service(doubler).map(prefixer));
-        assert_eq!(svc.as_mut().exec(1).await, "foo 2");
-        assert_eq!(svc.exec(3).await, "foo 6");
+        assert_eq!(oneshot(svc.as_mut(), 1).await, "foo 2");
+        assert_eq!(oneshot(svc, 3).await, "foo 6");
     }
 
     #[tokio::test]
     async fn then() {
         let mut svc = pin!(fn_service(doubler).then(fn_service(doubler)));
-        assert_eq!(svc.as_mut().exec(1).await, 4);
-        assert_eq!(svc.exec(3).await, 12);
+        assert_eq!(oneshot(svc.as_mut(), 1).await, 4);
+        assert_eq!(oneshot(svc, 3).await, 12);
     }
 }
